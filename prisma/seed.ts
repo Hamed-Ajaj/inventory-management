@@ -1,8 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../app/generated/prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const demoUserId = "133767f0-768d-4338-a612-50c8dc722b84";
+  const demoUserId = "qqjeDzCMSjhTXmQZveYOwZxhjWHSLpJh";
 
   // Create sample products
   await prisma.product.createMany({
