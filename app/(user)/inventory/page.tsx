@@ -1,3 +1,4 @@
+import Pagination from "@/components/pagination";
 import { deleteProduct } from "@/lib/actions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -6,7 +7,7 @@ import { headers } from "next/headers";
 const InventoryPage = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ q: string }>;
+  searchParams: Promise<{ q: string; page: string }>;
 }) => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -15,6 +16,9 @@ const InventoryPage = async ({
   const params = await searchParams;
   const q = (params.q ?? "").trim();
 
+  const pageSize = 10;
+
+  const page = Math.max(1, Number(params.page ?? 1));
   if (!session) {
     return <div>Not authenticated</div>;
   }
@@ -33,13 +37,13 @@ const InventoryPage = async ({
         userId,
         ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
       },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     }),
   ]);
 
-  const pageSize = 10;
-
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
   return (
     <div>
       <div>
@@ -125,7 +129,19 @@ const InventoryPage = async ({
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && <div>pagination</div>}
+        {totalPages > 1 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <Pagination
+              baseUrl="/inventory"
+              currentPage={page}
+              totalPages={totalPages}
+              searchParams={{
+                q,
+                pageSize: String(pageSize),
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
