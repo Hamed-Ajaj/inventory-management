@@ -5,10 +5,10 @@ import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { redirect } from "next/navigation";
+import { ActionResponse, ProductFormData } from "@/app/(user)/add-product/page";
 
 const ProductSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(3, "Name is required"),
   price: z.coerce.number().nonnegative("Price must be non-negative"),
   quantity: z.coerce.number().int().min(0, "Quantity must be non-negative"),
   sku: z.string().optional(),
@@ -40,7 +40,7 @@ export const deleteProduct = async (formData: FormData) => {
     revalidatePath("/inventory");
     return JSON.parse(
       JSON.stringify({
-        ...deleteProduct,
+        ...deletedProduct,
         error: "",
         status: "SUCCESS",
       }),
@@ -57,7 +57,10 @@ export const deleteProduct = async (formData: FormData) => {
   }
 };
 
-export const createProduct = async (formData: FormData) => {
+export const createProduct = async (
+  prevState: ActionResponse | null,
+  formData: FormData,
+): Promise<ActionResponse> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -65,22 +68,27 @@ export const createProduct = async (formData: FormData) => {
   if (!session) {
     return JSON.parse(
       JSON.stringify({
-        error: "UNAUTHORIZED",
-        status: "ERROR",
+        success: false,
+        message: "UNAUTHORIZED",
       }),
     );
   }
-
-  const parsed = ProductSchema.safeParse({
-    name: formData.get("name"),
-    price: formData.get("price"),
-    quantity: formData.get("quantity"),
-    sku: formData.get("sku") || undefined,
-    lowStockAt: formData.get("lowStockAt") || undefined,
-  });
+  const rawData: ProductFormData = {
+    name: formData.get("name") as string,
+    price: formData.get("price") as string,
+    quantity: formData.get("quantity") as string,
+    SKU: (formData.get("sku") as string) || undefined,
+    lowStockAt: (formData.get("lowStockAt") as string) || undefined,
+  };
+  const parsed = ProductSchema.safeParse(rawData);
 
   if (!parsed.success) {
-    throw new Error("Validation failed");
+    return {
+      inputs: rawData,
+      success: false,
+      message: "Please fix the errors in the form",
+      errors: parsed.error.flatten().fieldErrors,
+    };
   }
   try {
     const newProduct = await prisma.product.create({
@@ -91,15 +99,15 @@ export const createProduct = async (formData: FormData) => {
     return JSON.parse(
       JSON.stringify({
         ...newProduct,
-        error: "",
-        status: "SUCCESS",
+        success: true,
+        message: "Product Created Successfully!",
       }),
     );
   } catch (e) {
     return JSON.parse(
       JSON.stringify({
-        error: "Failed to create product",
-        status: "ERROR",
+        success: true,
+        message: "An unexpected error occurred",
       }),
     );
   }

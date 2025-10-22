@@ -53,7 +53,7 @@ const SettingsPage = () => {
           <div className="flex items-center space-x-4">
             <Avatar className="w-20 h-20">
               <AvatarImage
-                // src={session?.user?.image}
+                src={session?.user?.image || ""}
                 className="bg-center object-cover"
                 alt={session?.user?.name}
               />
@@ -92,7 +92,7 @@ const SettingsPage = () => {
             <Label htmlFor="fullName">Full Name</Label>
             <Input
               id="fullName"
-              // value={fullName}
+              value={session?.user.name}
               // onChange={(e) => setFullName(e.target.value)}
               placeholder="Enter your full name"
               className="focus:ring-blue-600 focus:border-blue-600"

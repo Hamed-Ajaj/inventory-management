@@ -1,17 +1,49 @@
+"use client";
+
 import { createProduct } from "@/lib/actions";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { useActionState } from "react";
+import { ProductSchema } from "@/app/schemas/product-schema";
+import { cn } from "@/lib/utils";
 
-export default async function AddProductPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export interface ProductFormData {
+  name: string;
+  price: string;
+  quantity: string;
+  SKU?: string;
+  lowStockAt?: string;
+}
+export interface ActionResponse {
+  success: boolean;
+  message: string;
+  errors?: {
+    [K in keyof ProductFormData]?: string[];
+  };
+  inputs?: ProductFormData;
+}
 
-  if (!session) {
+export default function AddProductPage() {
+  const initialState: ActionResponse = {
+    success: false,
+    message: "",
+  };
+
+  const { data, isPending: sessionPending } = useSession();
+  if (!data?.session && !sessionPending) {
     redirect("/sign-in");
   }
+
+  const [state, action, isPending] = useActionState(
+    createProduct,
+    initialState,
+  );
+
+  if (state.success) {
+    redirect("/inventory");
+  }
+  console.log(state);
   return (
     <div>
       <div className="mb-8">
@@ -26,11 +58,14 @@ export default async function AddProductPage() {
       </div>
       <div className="max-w-2xl ">
         <div className="bg-white rounded-lg border border-gray-200 p-6 ">
-          <form className="space-y-6" action={createProduct}>
+          <form className="space-y-6" action={action}>
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className={cn(
+                  "block text-sm font-medium text-gray-700 mb-2",
+                  state.errors?.name && "text-red-500",
+                )}
               >
                 Product Name *
               </label>
@@ -39,9 +74,15 @@ export default async function AddProductPage() {
                 id="name"
                 name="name"
                 required
+                defaultValue={state.inputs?.name}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-transparent"
                 placeholder="Enter Product Name"
               />
+              {state?.errors?.name && (
+                <p id="streetAddress-error" className="text-sm text-red-500">
+                  {state.errors.name[0]}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -58,9 +99,16 @@ export default async function AddProductPage() {
                   name="quantity"
                   min="0"
                   required
+                  defaultValue={state.inputs?.quantity}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-transparent"
                   placeholder="0"
                 />
+
+                {state?.errors?.quantity && (
+                  <p id="streetAddress-error" className="text-sm text-red-500">
+                    {state.errors.quantity[0]}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -76,9 +124,15 @@ export default async function AddProductPage() {
                   step="0.01"
                   min="0"
                   required
+                  defaultValue={state.inputs?.price}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-transparent"
                   placeholder="0.0"
                 />
+                {state?.errors?.price && (
+                  <p id="streetAddress-error" className="text-sm text-red-500">
+                    {state.errors.price[0]}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -93,9 +147,15 @@ export default async function AddProductPage() {
                 type="text"
                 id="sku"
                 name="sku"
+                defaultValue={state.inputs?.SKU}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-transparent"
                 placeholder="Enter SKU"
               />
+              {state?.errors?.SKU && (
+                <p id="streetAddress-error" className="text-sm text-red-500">
+                  {state.errors.SKU[0]}
+                </p>
+              )}
             </div>
 
             <div>
@@ -110,17 +170,28 @@ export default async function AddProductPage() {
                 id="lowStockAt"
                 name="lowStockAt"
                 min="0"
+                defaultValue={state.inputs?.lowStockAt}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-transparent"
                 placeholder="Enter low stock threshold"
               />
+
+              {state?.errors?.lowStockAt && (
+                <p id="streetAddress-error" className="text-sm text-red-500">
+                  {state.errors.lowStockAt[0]}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-5">
               <button
                 type="submit"
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className={cn(
+                  "px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700",
+                  isPending && "bg-purple-400 cursor-not-allowed",
+                )}
+                disabled={isPending}
               >
-                Add Product
+                {isPending ? "adding..." : "Add Product"}
               </button>
               <Link
                 href="/inventory"
