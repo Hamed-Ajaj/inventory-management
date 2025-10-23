@@ -1,8 +1,13 @@
+import DeleteForm from "@/components/delete-form";
 import Pagination from "@/components/pagination";
 import { deleteProduct } from "@/lib/actions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+
+export const dynamic = "force-dynamic";
+
+export const revalidate = 300; // cache for 5 minutes
 
 const InventoryPage = async ({
   searchParams,
@@ -112,17 +117,7 @@ const InventoryPage = async ({
                     {product.lowStockAt || "-"}
                   </td>
                   <td className="px-6 py-4  text-sm text-gray-500">
-                    <form
-                      action={async (formData: FormData) => {
-                        "use server";
-                        await deleteProduct(formData);
-                      }}
-                    >
-                      <input type="hidden" name="id" value={product.id} />
-                      <button className="text-red-600 hover:text-red-900">
-                        Delete
-                      </button>
-                    </form>
+                    <DeleteForm productId={product.id} />
                   </td>
                 </tr>
               ))}

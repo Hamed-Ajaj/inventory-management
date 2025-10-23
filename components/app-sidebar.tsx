@@ -21,12 +21,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import { useSession } from "@/lib/auth-client";
 
 const navigation = [
@@ -63,6 +57,7 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={key}>
                     <Link
+                      prefetch
                       className={`flex items-center space-x-3 py-2 px-3 rounded-lg ${
                         isActive
                           ? "bg-purple-100 text-gray-800"

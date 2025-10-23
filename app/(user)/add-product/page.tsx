@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { useActionState } from "react";
 import { ProductSchema } from "@/app/schemas/product-schema";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export interface ProductFormData {
   name: string;
@@ -40,10 +41,6 @@ export default function AddProductPage() {
     initialState,
   );
 
-  if (state.success) {
-    redirect("/inventory");
-  }
-  console.log(state);
   return (
     <div>
       <div className="mb-8">

@@ -4,18 +4,22 @@ import { headers } from "next/headers";
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { success, z } from "zod";
 import { ActionResponse, ProductFormData } from "@/app/(user)/add-product/page";
+import { redirect } from "next/navigation";
 
 const ProductSchema = z.object({
-  name: z.string().min(3, "Name is required"),
+  name: z.string().min(3, "Name should be at least 3 characters."),
   price: z.coerce.number().nonnegative("Price must be non-negative"),
   quantity: z.coerce.number().int().min(0, "Quantity must be non-negative"),
   sku: z.string().optional(),
   lowStockAt: z.coerce.number().int().min(0).optional(),
 });
 
-export const deleteProduct = async (formData: FormData) => {
+export const deleteProduct = async (
+  prevState: ActionResponse | null,
+  formData: FormData,
+): Promise<ActionResponse> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -41,15 +45,15 @@ export const deleteProduct = async (formData: FormData) => {
     return JSON.parse(
       JSON.stringify({
         ...deletedProduct,
-        error: "",
-        status: "SUCCESS",
+        success: true,
+        message: "product deleted successfully",
       }),
     );
   } catch (e: unknown) {
     return JSON.parse(
       JSON.stringify({
-        error: "Failed to delete Startup",
-        status: "ERROR",
+        success: "false",
+        message: "Failed to deleted product!",
       }),
     );
   } finally {
@@ -110,5 +114,7 @@ export const createProduct = async (
         message: "An unexpected error occurred",
       }),
     );
+  } finally {
+    redirect("/inventory");
   }
 };

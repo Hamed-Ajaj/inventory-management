@@ -5,43 +5,42 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TrendingUp } from "lucide-react";
 import { headers } from "next/headers";
+import { cache } from "react";
+
+export const dynamic = "force-dynamic"; // Ensures the page revalidates
+
+export const revalidate = 300; // cache for 5 minutes
+
+const getSessionCached = cache(async (headers: Headers) => {
+  return auth.api.getSession({ headers });
+});
+
+const getDashboardData = cache(async (userId: string) => {
+  const [totalProducts, lowStock, recent, allProducts] = await Promise.all([
+    prisma.product.count({ where: { userId } }),
+    prisma.product.count({ where: { userId, quantity: { lte: 5 } } }),
+    prisma.product.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    prisma.product.findMany({
+      where: { userId },
+      select: { price: true, createdAt: true, quantity: true },
+    }),
+  ]);
+  return { totalProducts, lowStock, recent, allProducts };
+});
 
 async function DashboardPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getSessionCached(await headers());
 
   if (!session) {
     return <div>Not authenticated</div>;
   }
 
-  const [totalProducts, lowStock, recent, allProducts] = await Promise.all([
-    await prisma.product.count({
-      where: {
-        userId: session.user.id,
-      },
-    }),
-    await prisma.product.count({
-      where: {
-        userId: session.user.id,
-        lowStockAt: { not: null },
-        quantity: { lte: 5 },
-      },
-    }),
-    await prisma.product.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: { createdAt: "asc" },
-      take: 5,
-    }),
-    await prisma.product.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      select: { price: true, createdAt: true, quantity: true },
-    }),
-  ]);
+  const { totalProducts, lowStock, recent, allProducts } =
+    await getDashboardData(session.user.id);
 
   const totalValue = allProducts.reduce(
     (sum, product) => sum + Number(product.price) * Number(product.quantity),

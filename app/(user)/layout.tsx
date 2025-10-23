@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function RootLayout({
   children,
@@ -12,6 +13,7 @@ export default function RootLayout({
       <main className="p-8 bg-gray-50 w-full min-h-screen">
         {/* <SidebarTrigger /> */}
         {children}
+        <Toaster />
       </main>
     </SidebarProvider>
   );
